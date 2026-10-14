@@ -11,13 +11,23 @@
 <header>
   <h1>Contact notes</h1>
   <nav>
-    <a href="#/new">New note</a>
-    <a href="#/notes">Notes</a>
-    <a href="#/export">Export</a>
+    <a href="#/notes" data-v="notes" data-also="new edit note">Notes</a>
+    <a href="#/ideas" data-v="ideas" data-also="idea">Ideas</a>
+    <a href="#/hour" data-v="hour">Hour</a>
+    <a href="#/synthesis" data-v="synthesis">Synthesis</a>
+    <a href="#/ledger" data-v="ledger" data-also="piece review debrief">Ledger</a>
+    <a href="#/settings" data-v="settings">Settings</a>
   </nav>
+  <div id="hourbar" hidden></div>
 </header>
 <main id="main"></main>
 <script src="db.js"></script>
-<script src="app.js"></script>
+<script src="core.js"></script>
+<script src="notes.js"></script>
+<script src="ideas.js"></script>
+<script src="hour.js"></script>
+<script src="synthesis.js"></script>
+<script src="ledger.js"></script>
+<script src="settings.js"></script>
 </body>
 </html>

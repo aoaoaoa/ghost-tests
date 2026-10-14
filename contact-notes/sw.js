@@ -1,6 +1,6 @@
 // Keeps the app usable without a connection. Caches only the app's own files.
-const CACHE = 'contact-notes-v1';
-const FILES = ['./', 'index.html', 'style.css', 'db.js', 'app.js'];
+const CACHE = 'contact-notes-v2';
+const FILES = ['./', 'index.html', 'style.css', 'db.js', 'core.js', 'notes.js', 'ideas.js', 'hour.js', 'synthesis.js', 'ledger.js', 'settings.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));

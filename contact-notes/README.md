@@ -1,6 +1,6 @@
-# Contact notes (prototype 1)
+# Contact notes
 
-The first of five prototypes in `CLAUDE.md`: writing a contact note on a phone within 48 hours of a conversation or space.
+All five prototypes in `CLAUDE.md`: contact notes, idea log, weekly hour, cycle synthesis, ledger and debriefs.
 
 ## Run it
 
@@ -12,12 +12,21 @@ Then open `http://localhost:8765` on the phone (same network, or served from the
 
 ## What it does
 
-- A note answers four prompts: who or where, the idea tested, how they responded (with their exact words, optional), and the follow-up agreed. Fields start empty; the app supplies prompts, never text.
-- A note cannot be saved without a reader (Office, Convenor, or a named person) or an author.
-- Drafts are kept as you type and listed with the time left in the 48-hour window.
-- Saved notes are listed by week. Opening a note records the date it was last reopened.
-- Contacts and spaces are created from the note; a known name fills in organisation and role.
-- Export: notes as Markdown and CSV, contacts and spaces as CSV, and a full JSON backup with restore.
+**Contact notes** (phone). Four prompts: who or where, the idea tested, how they responded (with their exact words, optional), the follow-up agreed. Fields start empty. Drafts are kept as you type and show the time left in the 48-hour window. Saved notes are listed by week.
+
+**Idea log.** Each idea named in a saved note waits as a line to log: how it landed (rejected, neutral, interested, adopted) and how they restated it. Each idea has a reading page with every response in date order, plus its marker phrasings, kind and status.
+
+**Weekly hour.** Three timed stages: contact notes (30 min), idea log (15), rereading the last synthesis (15). During a stage the app shows its timer and that stage's work, nothing else. The hour survives a reload.
+
+**Cycle synthesis** (desktop). The three-part template sits beside the cycle's own notes, idea log lines and debriefs, filterable by word, idea and kind, shown as written. Save requires a reader. The convenor approves it, which fixes the text until approval is withdrawn. Records not reopened in two cycles are listed beside it for shortening or merging. Downloads as Markdown, prints as a page.
+
+**Ledger and debriefs.** One row per piece or joint activity. Reviews fall due at 3, 6 and 12 months; each opens the piece with its ideas and marker phrasings and asks the response and uptake questions. Due reviews also show on the notes page. Debriefs record reactions, from whom, and whether the collaborator returns.
+
+**Throughout.** Every record needs a named reader and author before it saves, and carries a last-reopened date. Settings holds the cycle length (3 or 4 months), every export (Markdown and CSV), a full backup and restore, and the passphrase lock.
+
+## Passphrase lock
+
+With a passphrase set, every record is encrypted on the device (AES-GCM, key derived with PBKDF2) and the app opens on a lock screen. A forgotten passphrase cannot be recovered, so take a backup first. Backups are not encrypted. The browser allows the lock only on https or localhost.
 
 ## Dictation
 
@@ -31,8 +40,8 @@ With the server running:
 
     NODE_PATH=$(npm root -g) node test/smoke.js
 
-It walks the whole flow on a 390 px viewport with a stand-in for on-device speech.
+It walks every prototype, notes on a 390 px viewport and the rest at desktop width, with a stand-in for on-device speech.
 
 ## Not yet
 
-Idea log, weekly hour, cycle synthesis, ledger (prototypes 2 to 5); the two-cycle "not reopened" flag (the date is stored now); space attendees; passphrase lock.
+Space attendee lists; changing the passphrase (remove and set again); sync between devices.

@@ -1,29 +1,14 @@
 'use strict';
 
-const main = document.getElementById('main');
-const H = 3600 * 1000;
+// Prototype 1: contact notes.
+
 const WINDOW_HOURS = 48;
 const KINDS = ['conference', 'roundtable', 'visit', 'online'];
 const STRENGTHS = ['new', 'developing', 'close'];
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const LANG = navigator.language || 'en';
 
-// ---------- small helpers ----------
-
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const pad = (n) => String(n).padStart(2, '0');
-const localStamp = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-const fmtDay = (d) => new Date(d).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-const fmtDayTime = (d) => new Date(d).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const lower = (s) => (s || '').trim().toLowerCase();
-
-function readerOf(n) {
-  return n.readerChoice === 'person' ? (n.readerName || '').trim() : (n.readerChoice || '');
-}
-
-function whoOf(n) {
-  return n.whoKind === 'space' ? n.spaceName : n.contactName;
-}
+const whoOf = (n) => (n.whoKind === 'space' ? n.spaceName : n.contactName);
 
 function weekStart(when) {
   const d = new Date(when);
@@ -59,7 +44,7 @@ setInterval(() => {
 
 function blankNote() {
   return {
-    id: newId(), status: 'draft', stored: false,
+    id: newId(), status: 'draft',
     when: localStamp(new Date()),
     whoKind: 'contact',
     contactName: '', organisation: '', role: '', strength: 'new', contactId: null,
@@ -71,7 +56,7 @@ function blankNote() {
   };
 }
 
-function missing(n) {
+function noteMissing(n) {
   const m = [];
   if (!n.when) m.push('when');
   if (!(whoOf(n) || '').trim()) m.push(n.whoKind === 'space' ? 'the space' : 'the person');
@@ -86,48 +71,14 @@ function missing(n) {
 
 const transcriptUnedited = (n) => !!n.transcriptRaw && n.transcript === n.transcriptRaw;
 
-async function getSetting(key) {
-  const s = await DB.get('settings', key);
-  return s ? s.value : '';
-}
-const setSetting = (key, value) => DB.put('settings', { id: key, value });
-
-// ---------- routing ----------
-
-let flash = '';
-let flushDraft = null; // writes the open draft at once; set while a form is showing
-window.addEventListener('hashchange', route);
-document.addEventListener('visibilitychange', () => { if (document.hidden && flushDraft) flushDraft(); });
-route();
-
-if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-
-async function route() {
-  if (flushDraft) { const f = flushDraft; flushDraft = null; await f(); }
-  const [, view, id] = (location.hash || '#/notes').split('/');
-  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('here', a.getAttribute('href') === `#/${view}`));
-  window.scrollTo(0, 0);
-  if (view === 'new') return showForm(blankNote());
-  if (view === 'edit') {
-    const n = await DB.get('notes', id);
-    return n ? showForm(n) : (location.hash = '#/notes');
-  }
-  if (view === 'note') return showNote(id);
-  if (view === 'export') return showExport();
-  const msg = flash;
-  flash = '';
-  return showList(msg);
-}
-
 // ---------- list ----------
 
-async function showList(flash) {
+VIEWS.notes = async (_id, _sub, msg) => {
   const notes = await DB.all('notes');
+  const inHour = !!SETTINGS.hour;
   const drafts = notes.filter((n) => n.status === 'draft').sort((a, b) => a.when.localeCompare(b.when));
-  const saved = notes.filter((n) => n.status === 'saved').sort((a, b) => b.when.localeCompare(a.when));
+  const saved = inHour ? [] : notes.filter((n) => n.status === 'saved').sort((a, b) => b.when.localeCompare(a.when));
+  const due = inHour ? [] : await dueReviews();
 
   const weeks = new Map();
   for (const n of saved) {
@@ -142,28 +93,28 @@ async function showList(flash) {
       ${extra || ''}</a></li>`;
 
   main.innerHTML = `
-    ${flash ? `<p class="status">${esc(flash)}</p>` : ''}
+    ${msg ? `<p class="status">${esc(msg)}</p>` : ''}
+    <p class="actions"><a class="button primary" href="#/new">New contact note</a></p>
+    ${due.length ? `<h2>Reviews due</h2><ul class="notes">${due.map((d) => `<li><a href="#/review/${d.piece.id}/${d.months}">
+        <strong>${esc(d.piece.title)}</strong><div class="meta">${d.months}-month review, due ${esc(fmtDate(d.dueOn))}</div></a></li>`).join('')}</ul>` : ''}
     <h2>Drafts</h2>
     ${drafts.length
       ? `<ul class="notes">${drafts.map((n) => item(n, `#/edit/${n.id}`, windowHtml(n.when))).join('')}</ul>`
       : '<p class="empty">No drafts.</p>'}
-    <h2>Notes by week</h2>
+    ${inHour ? '' : `<h2>Notes by week</h2>
     ${weeks.size
       ? [...weeks].map(([k, ns]) => `<h3>Week of ${esc(fmtDay(k))}</h3>
           <ul class="notes">${ns.map((n) => item(n, `#/note/${n.id}`, `<div class="meta">For ${esc(readerOf(n))}</div>`)).join('')}</ul>`).join('')
-      : '<p class="empty">No saved notes yet.</p>'}
-    <p class="actions"><a class="button" href="#/new">New note</a></p>`;
-}
+      : '<p class="empty">No saved notes yet.</p>'}`}`;
+};
 
 // ---------- read one note ----------
 
-async function showNote(id) {
+VIEWS.note = async (id) => {
   const n = await DB.get('notes', id);
   if (!n) return (location.hash = '#/notes');
   if (n.status === 'draft') return (location.hash = `#/edit/${id}`);
-  const previous = n.lastReopened;
-  n.lastReopened = new Date().toISOString();
-  await DB.put('notes', n);
+  const previous = await markReopened('notes', n);
 
   const contact = n.contactId ? await DB.get('contacts', n.contactId) : null;
   const space = n.spaceId ? await DB.get('spaces', n.spaceId) : null;
@@ -181,27 +132,34 @@ async function showNote(id) {
     <h3>Follow-up agreed</h3><p>${esc(n.followUp)}</p>
     ${n.transcript ? `<details><summary>Transcript, as edited</summary><p>${esc(n.transcript)}</p></details>` : ''}
     <p class="meta" style="margin-top:20px">Written by ${esc(n.author)} for ${esc(readerOf(n))}.<br>
-      Saved ${esc(fmtDayTime(n.savedAt))}.
-      ${previous ? `Last reopened before today's reading: ${esc(fmtDayTime(previous))}.` : 'Not reopened since it was saved.'}</p>
+      Saved ${esc(fmtDayTime(n.savedAt))}. ${esc(reopenedLine(n, previous))}</p>
     <div class="actions">
       <a class="button" href="#/edit/${n.id}">Edit</a>
-      <a class="button" href="#/notes">Back to notes</a>
+      <a class="button" href="javascript:history.back()">Back</a>
       <button type="button" id="del">Delete</button>
     </div></article>`;
 
   document.getElementById('del').onclick = async () => {
     if (!confirm('Delete this note? This cannot be undone.')) return;
     await DB.del('notes', n.id);
+    await dropEmptyEntries(n.id, []);
     location.hash = '#/notes';
   };
-}
+};
 
 // ---------- the form ----------
 
-async function showForm(n) {
-  const [contacts, allNotes] = await Promise.all([DB.all('contacts'), DB.all('notes')]);
-  if (!n.author) n.author = await getSetting('author');
+VIEWS.new = () => noteForm(blankNote());
+VIEWS.edit = async (id) => {
+  const n = await DB.get('notes', id);
+  return n ? noteForm(n) : (location.hash = '#/notes');
+};
+
+async function noteForm(n) {
+  const [contacts, ideas] = await Promise.all([DB.all('contacts'), DB.all('ideas')]);
+  if (!n.author) n.author = SETTINGS.author;
   const isSaved = n.status === 'saved';
+  const knownIdeas = ideas.map((i) => i.label).sort((a, b) => a.localeCompare(b));
 
   main.innerHTML = `
   <form id="f" novalidate autocomplete="off">
@@ -261,18 +219,7 @@ async function showForm(n) {
       <textarea name="followUp" rows="2">${esc(n.followUp)}</textarea>
     </fieldset>
 
-    <fieldset>
-      <legend>Reader</legend>
-      <p class="hint">Who is this note written for? A note without a reader cannot be saved.</p>
-      <select name="readerChoice">
-        <option value="">Choose a reader</option>
-        <option ${n.readerChoice === 'Office' ? 'selected' : ''}>Office</option>
-        <option ${n.readerChoice === 'Convenor' ? 'selected' : ''}>Convenor</option>
-        <option value="person" ${n.readerChoice === 'person' ? 'selected' : ''}>A named person</option>
-      </select>
-      <label id="reader-name">Their name <input type="text" name="readerName" value="${esc(n.readerName)}"></label>
-      <label>Written by <input type="text" name="author" value="${esc(n.author)}"></label>
-    </fieldset>
+    ${readerFields(n, 'Who is this note written for?')}
 
     <details ${n.transcript || n.transcriptRaw ? 'open' : ''}>
       <summary>Transcript (optional)</summary>
@@ -291,8 +238,7 @@ async function showForm(n) {
   </div></div>`;
 
   const f = document.getElementById('f');
-  const knownIdeas = [...new Set(allNotes.filter((x) => x.status === 'saved').flatMap((x) => x.ideas))].sort((a, b) => a.localeCompare(b));
-  let timer;
+  const saver = autosaver('notes');
 
   function read() {
     const v = (k) => f.elements[k].value;
@@ -304,7 +250,7 @@ async function showForm(n) {
     n.strength = v('strength');
     n.spaceName = v('spaceName');
     n.spaceKind = v('spaceKind');
-    n.ideas = v('ideas').split('\n').map((s) => s.trim()).filter(Boolean);
+    n.ideas = lines(v('ideas'));
     n.response = v('response');
     n.theirWords = v('theirWords');
     n.followUp = v('followUp');
@@ -317,7 +263,7 @@ async function showForm(n) {
   function refresh() {
     document.getElementById('who-contact').hidden = n.whoKind !== 'contact';
     document.getElementById('who-space').hidden = n.whoKind !== 'space';
-    document.getElementById('reader-name').hidden = n.readerChoice !== 'person';
+    showReaderName(f, n);
     if (!isSaved) document.getElementById('win').innerHTML = windowHtml(n.when);
 
     const known = contacts.find((c) => lower(c.name) === lower(n.contactName));
@@ -330,7 +276,7 @@ async function showForm(n) {
     const box = document.getElementById('suggest');
     if (box.innerHTML !== html) box.innerHTML = html; // rebuilding mid-tap would swallow the tap
 
-    const m = missing(n);
+    const m = noteMissing(n);
     const blocked = transcriptUnedited(n);
     document.getElementById('needed').textContent = blocked
       ? 'Edit the transcript before saving.'
@@ -341,22 +287,7 @@ async function showForm(n) {
   function changed() {
     read();
     refresh();
-    if (isSaved) return;
-    clearTimeout(timer);
-    pending = true;
-    timer = setTimeout(storeDraft, 400);
-  }
-  flushDraft = () => { clearTimeout(timer); return pending ? storeDraft() : Promise.resolve(); };
-
-  let pending = false;
-  async function storeDraft() {
-    pending = false;
-    const now = new Date().toISOString();
-    if (!n.createdAt) n.createdAt = now;
-    n.updatedAt = now;
-    n.stored = true;
-    await DB.put('notes', n);
-    document.getElementById('status').textContent = `Draft kept on this device at ${new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}.`;
+    if (!isSaved) saver.touch(n);
   }
 
   f.addEventListener('input', changed);
@@ -389,18 +320,16 @@ async function showForm(n) {
 
   const discard = document.getElementById('discard');
   if (discard) discard.onclick = async () => {
-    if ((n.stored || n.response || n.contactName) && !confirm('Discard this draft?')) return;
-    clearTimeout(timer);
-    pending = false;
+    if ((n.createdAt || n.response || n.contactName) && !confirm('Discard this draft?')) return;
+    saver.cancel();
     await DB.del('notes', n.id);
     location.hash = '#/notes';
   };
 
   document.getElementById('save').onclick = async () => {
     read();
-    if (transcriptUnedited(n) || missing(n).length) return refresh();
-    clearTimeout(timer);
-    pending = false;
+    if (transcriptUnedited(n) || noteMissing(n).length) return refresh();
+    saver.cancel();
     await saveNote(n);
     await setSetting('author', n.author.trim());
     flash = 'Note saved.';
@@ -443,11 +372,11 @@ async function saveNote(n) {
   }
   if (n.readerChoice !== 'person') n.readerName = '';
   n.status = 'saved';
-  n.stored = true;
   n.createdAt = n.createdAt || now;
   n.updatedAt = now;
   n.savedAt = n.savedAt || now;
   await DB.put('notes', n);
+  await syncIdeas(n);
 }
 
 // ---------- dictation, on this device only ----------
@@ -471,7 +400,7 @@ async function setupDictation(n, f, changed) {
     document.getElementById('prep').onclick = async (e) => {
       e.target.disabled = true;
       e.target.textContent = 'Preparing…';
-      try { await SR.install({ langs: [LANG], processLocally: true }); } catch (err) { /* reported below */ }
+      try { await SR.install({ langs: [LANG], processLocally: true }); } catch (err) { /* state is checked again below */ }
       setupDictation(n, f, changed);
     };
     return;
@@ -503,90 +432,5 @@ async function setupDictation(n, f, changed) {
     rec.onerror = () => { rec = null; btn.textContent = 'Start dictation'; };
     rec.start();
     btn.textContent = 'Stop dictation';
-  };
-}
-
-// ---------- export ----------
-
-const csvCell = (v) => {
-  const s = Array.isArray(v) ? v.join('; ') : String(v ?? '');
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
-const toCsv = (rows, cols) => '﻿' + [cols.join(','), ...rows.map((r) => cols.map((c) => csvCell(r[c])).join(','))].join('\r\n') + '\r\n';
-
-function download(name, text, type) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type }));
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-
-function notesMarkdown(notes, contacts, spaces) {
-  const byId = (list, id) => list.find((x) => x.id === id);
-  const out = ['# Contact notes', '', `Exported ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, ''];
-  for (const n of notes) {
-    const c = byId(contacts, n.contactId);
-    const s = byId(spaces, n.spaceId);
-    const sub = c ? [c.organisation, c.role].filter(Boolean).join(', ') : s ? s.kind : '';
-    out.push(`## ${n.when.replace('T', ' ')} · ${whoOf(n)}${sub ? ` (${sub})` : ''}`, '');
-    out.push(`Written by ${n.author} for ${readerOf(n)}. Saved ${n.savedAt}. Last reopened ${n.lastReopened || 'never'}.`, '');
-    out.push('### Idea tested', '', ...n.ideas.map((i) => `- ${i}`), '');
-    out.push('### How they responded', '', n.response.trim(), '');
-    if (n.theirWords) out.push('### Their words', '', `> ${n.theirWords.trim()}`, '');
-    out.push('### Follow-up agreed', '', n.followUp.trim(), '');
-    if (n.transcript) out.push('### Transcript, as edited', '', n.transcript.trim(), '');
-  }
-  return out.join('\n');
-}
-
-async function showExport() {
-  main.innerHTML = `
-    <h2>Export</h2>
-    <p>Everything stays on this device until you export it. Exports are plain files that open without this app.</p>
-    <div class="actions">
-      <button type="button" data-x="md">Notes as Markdown</button>
-      <button type="button" data-x="notes">Notes as CSV</button>
-      <button type="button" data-x="contacts">Contacts as CSV</button>
-      <button type="button" data-x="spaces">Spaces as CSV</button>
-    </div>
-    <h2>Backup</h2>
-    <p>A full copy, drafts included, for moving to another device.</p>
-    <div class="actions">
-      <button type="button" data-x="json">Download backup</button>
-      <label class="button">Restore from backup <input type="file" id="restore" accept="application/json,.json" hidden></label>
-    </div>
-    <p class="status" id="status"></p>`;
-
-  main.querySelectorAll('[data-x]').forEach((b) => b.onclick = async () => {
-    const [notes, contacts, spaces] = await Promise.all(['notes', 'contacts', 'spaces'].map((s) => DB.all(s)));
-    const saved = notes.filter((n) => n.status === 'saved').sort((a, b) => a.when.localeCompare(b.when));
-    const day = localStamp(new Date()).slice(0, 10);
-    const x = b.dataset.x;
-    if (x === 'md') download(`contact-notes-${day}.md`, notesMarkdown(saved, contacts, spaces), 'text/markdown');
-    if (x === 'notes') download(`contact-notes-${day}.csv`, toCsv(saved.map((n) => ({ ...n, who: whoOf(n), reader: readerOf(n) })),
-      ['when', 'whoKind', 'who', 'ideas', 'response', 'theirWords', 'followUp', 'author', 'reader', 'savedAt', 'lastReopened', 'contactId', 'spaceId', 'id']), 'text/csv');
-    if (x === 'contacts') download(`contacts-${day}.csv`, toCsv(contacts,
-      ['name', 'organisation', 'role', 'strength', 'firstMet', 'lastContact', 'id']), 'text/csv');
-    if (x === 'spaces') download(`spaces-${day}.csv`, toCsv(spaces, ['name', 'date', 'kind', 'id']), 'text/csv');
-    if (x === 'json') download(`contact-notes-backup-${day}.json`, JSON.stringify({ app: 'contact-notes', version: 1, notes, contacts, spaces }, null, 2), 'application/json');
-  });
-
-  document.getElementById('restore').onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const status = document.getElementById('status');
-    try {
-      const data = JSON.parse(await file.text());
-      if (data.app !== 'contact-notes' || !['notes', 'contacts', 'spaces'].every((k) => Array.isArray(data[k]))) throw new Error('not a backup');
-      if (!confirm(`Add ${data.notes.length} notes and ${data.contacts.length} contacts from this backup? Records with the same id are replaced.`)) return;
-      for (const k of ['notes', 'contacts', 'spaces']) for (const r of data[k]) if (r && r.id) await DB.put(k, r);
-      status.textContent = 'Backup restored.';
-    } catch (err) {
-      status.textContent = 'That file is not a backup from this app.';
-    }
-    e.target.value = '';
   };
 }
