@@ -18,7 +18,7 @@ Then open `http://localhost:8765` on the phone (same network, or served from the
 
 **Weekly hour.** Three timed stages: contact notes (30 min), idea log (15), rereading the last synthesis (15). During a stage the app shows its timer and that stage's work, nothing else. The hour survives a reload.
 
-**Cycle synthesis** (desktop). The three-part template sits beside the cycle's own notes, idea log lines and debriefs, filterable by word, idea and kind, shown as written. Save requires a reader. The convenor approves it, which fixes the text until approval is withdrawn. Records not reopened in two cycles are listed beside it for shortening or merging. Downloads as Markdown, prints as a page.
+**Cycle synthesis** (desktop). The three-part template sits beside the cycle's own notes, idea log lines and debriefs, filterable by word, idea and kind, shown as written. Save requires a reader. The convenor approves it, which fixes the text until approval is withdrawn. Records not reopened in two cycles are listed beside it for shortening or merging. Downloads as a Word document (.docx) for upload to Google Drive, where it opens in Google Docs. Built on the device; nothing is sent anywhere.
 
 **Ledger and debriefs.** One row per piece or joint activity. Reviews fall due at 3, 6 and 12 months; each opens the piece with its ideas and marker phrasings and asks the response and uptake questions. Due reviews also show on the notes page. Debriefs record reactions, from whom, and whether the collaborator returns.
 

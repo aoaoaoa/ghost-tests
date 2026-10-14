@@ -68,11 +68,8 @@ Build in this order. Each is usable on its own.
 
 - Cycle length: three months.
 - Debriefs: the officer writes them after a conversation with the collaborator.
-
-## Open questions for the officers
-
-- Does the Assembly want the synthesis as a page in the app or as an exported document?
-- What is the office's existing storage (Google Workspace, local files) so export formats match?
+- The Assembly receives the synthesis as a document.
+- The office uses Google Workspace: the synthesis downloads as .docx for upload to Drive.
 
 ## Sources behind this brief
 

@@ -102,7 +102,7 @@ async function synthesisPage(s, all, previous, msg) {
              <div class="row"><input type="text" id="approver" aria-label="Convenor's name"><button type="button" id="approve" ${s.savedAt ? '' : 'disabled'}>Approve</button></div>`}
       </fieldset>
       <div class="actions">
-        <button type="button" id="md" ${s.savedAt ? '' : 'disabled'}>Download as Markdown</button>
+        <button type="button" id="docx" ${s.savedAt ? '' : 'disabled'}>Download the document (.docx)</button>
         <button type="button" onclick="window.print()">Print</button>
         <a class="button" href="#/synthesis">All syntheses</a>
       </div>
@@ -216,7 +216,7 @@ async function synthesisPage(s, all, previous, msg) {
     await DB.put('syntheses', s);
     route();
   };
-  document.getElementById('md').onclick = () => download(`cycle-${s.cycle}-synthesis.md`, synMarkdown(s), 'text/markdown');
+  document.getElementById('docx').onclick = () => download(`cycle-${s.cycle}-synthesis.docx`, synDocx(s));
 
   refresh();
   filter();

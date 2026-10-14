@@ -210,8 +210,9 @@ const URL = process.env.APP_URL || 'http://localhost:8765/';
   await page.waitForSelector('text=Approved.');
   assert(await page.locator('[name=reading]').getAttribute('readonly') !== null, 'approved text is fixed');
   {
-    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#md')]);
-    assert.match(fs.readFileSync(await dl.path(), 'utf8'), /# Cycle 1 synthesis[\s\S]*Approved by Grace[\s\S]*## What advanced/);
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#docx')]);
+    assert.strictEqual(dl.suggestedFilename(), 'cycle-1-synthesis.docx');
+    await dl.saveAs(process.env.DOCX || 'test/last-synthesis.docx');
   }
   await go('#/hour');
   await page.click('#start');

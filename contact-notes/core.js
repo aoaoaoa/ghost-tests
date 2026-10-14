@@ -116,7 +116,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && flu
 
 function download(name, text, type) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.href = URL.createObjectURL(text instanceof Blob ? text : new Blob([text], { type }));
   a.download = name;
   document.body.appendChild(a);
   a.click();
