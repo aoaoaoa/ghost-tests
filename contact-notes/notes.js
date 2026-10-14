@@ -48,7 +48,7 @@ function blankNote() {
     when: localStamp(new Date()),
     whoKind: 'contact',
     contactName: '', organisation: '', role: '', strength: 'new', contactId: null,
-    spaceName: '', spaceKind: '', spaceId: null,
+    spaceName: '', spaceKind: '', spaceId: null, attendees: [],
     ideas: [], response: '', theirWords: '', followUp: '',
     readerChoice: '', readerName: '', author: '',
     transcriptRaw: '', transcript: '',
@@ -121,11 +121,13 @@ VIEWS.note = async (id) => {
   const sub = contact
     ? [contact.organisation, contact.role, contact.strength].filter(Boolean).join(' · ')
     : space ? space.kind : '';
+  const attendees = n.whoKind === 'space' && (n.attendees || []).length ? n.attendees : [];
 
   main.innerHTML = `<article class="read">
     <h2>${esc(whoOf(n))}</h2>
     <p class="meta">${esc(sub)}</p>
     <p class="meta">${esc(fmtDayTime(n.when))}</p>
+    ${attendees.length ? `<h3>Spoke with</h3><p>${esc(attendees.join('\n'))}</p>` : ''}
     <h3>Idea tested</h3><p>${esc(n.ideas.join('\n'))}</p>
     <h3>How they responded</h3><p>${esc(n.response)}</p>
     ${n.theirWords ? `<h3>Their words</h3><blockquote>${esc(n.theirWords)}</blockquote>` : ''}
@@ -194,6 +196,9 @@ async function noteForm(n) {
         <label>Kind
           <select name="spaceKind"><option value="">Choose</option>${KINDS.map((k) => `<option ${n.spaceKind === k ? 'selected' : ''}>${k}</option>`).join('')}</select>
         </label>
+        <label>Who you spoke with there <span class="hint">(optional, one name per line; new names become contacts)</span>
+          <textarea name="attendees" rows="2">${esc((n.attendees || []).join('\n'))}</textarea>
+        </label>
       </div>
     </fieldset>
 
@@ -250,6 +255,7 @@ async function noteForm(n) {
     n.strength = v('strength');
     n.spaceName = v('spaceName');
     n.spaceKind = v('spaceKind');
+    n.attendees = lines(v('attendees'));
     n.ideas = lines(v('ideas'));
     n.response = v('response');
     n.theirWords = v('theirWords');
@@ -344,18 +350,25 @@ async function noteForm(n) {
   refresh();
 }
 
+// Finds or adds a contact by name and moves their first-met and last-contact dates.
+async function touchContact(contacts, name, when, details) {
+  let c = contacts.find((x) => lower(x.name) === lower(name));
+  if (!c) {
+    c = { id: newId(), name: name.trim(), organisation: '', role: '', strength: 'new', firstMet: when, lastContact: when };
+    contacts.push(c);
+  }
+  if (details) Object.assign(c, details);
+  if (when < c.firstMet) c.firstMet = when;
+  if (when > c.lastContact) c.lastContact = when;
+  await DB.put('contacts', c);
+  return c;
+}
+
 async function saveNote(n) {
   const now = new Date().toISOString();
+  const contacts = await DB.all('contacts');
   if (n.whoKind === 'contact') {
-    const contacts = await DB.all('contacts');
-    let c = contacts.find((x) => lower(x.name) === lower(n.contactName));
-    if (!c) c = { id: newId(), name: n.contactName.trim(), firstMet: n.when, lastContact: n.when };
-    c.organisation = n.organisation.trim();
-    c.role = n.role.trim();
-    c.strength = n.strength;
-    if (n.when < c.firstMet) c.firstMet = n.when;
-    if (n.when > c.lastContact) c.lastContact = n.when;
-    await DB.put('contacts', c);
+    const c = await touchContact(contacts, n.contactName, n.when, { organisation: n.organisation.trim(), role: n.role.trim(), strength: n.strength });
     n.contactId = c.id;
     n.spaceId = null;
     n.contactName = c.name;
@@ -365,6 +378,10 @@ async function saveNote(n) {
     let s = spaces.find((x) => lower(x.name) === lower(n.spaceName) && x.date === day);
     if (!s) s = { id: newId(), name: n.spaceName.trim(), date: day, attendees: [] };
     s.kind = n.spaceKind;
+    for (const name of n.attendees || []) {
+      const c = await touchContact(contacts, name, n.when);
+      if (!s.attendees.includes(c.id)) s.attendees.push(c.id);
+    }
     await DB.put('spaces', s);
     n.spaceId = s.id;
     n.contactId = null;

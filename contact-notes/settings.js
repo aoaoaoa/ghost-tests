@@ -70,7 +70,14 @@ VIEWS.settings = async (_id, _sub, msg) => {
     <h2>Passphrase lock</h2>
     ${!DB.canLock() ? '<p>This browser only allows the lock on a secure address (https, or localhost on this device).</p>'
       : locked ? `<p>The records on this device are encrypted with your passphrase.</p>
-        <div class="actions"><button type="button" id="lock-now">Lock now</button><button type="button" id="unlock-off">Remove the passphrase</button></div>`
+        <div class="actions"><button type="button" id="lock-now">Lock now</button><button type="button" id="unlock-off">Remove the passphrase</button></div>
+        <form id="change-lock" class="narrow">
+          <h3>Change the passphrase</h3>
+          <label>New passphrase <input type="password" name="a" autocomplete="new-password"></label>
+          <label>Again <input type="password" name="b" autocomplete="new-password"></label>
+          <p class="hint">Keep this page open until it says the change is done.</p>
+          <button type="submit">Change the passphrase</button>
+        </form>`
       : `<p>Encrypts the records on this device. If the passphrase is forgotten, the records cannot be opened again, so download a backup first.</p>
         <form id="set-lock" class="narrow">
           <label>Passphrase <input type="password" name="a" autocomplete="new-password"></label>
@@ -126,17 +133,21 @@ VIEWS.settings = async (_id, _sub, msg) => {
     e.target.value = '';
   };
 
-  const setLock = document.getElementById('set-lock');
-  if (setLock) setLock.onsubmit = async (e) => {
-    e.preventDefault();
-    const { a, b } = e.target.elements;
-    if (a.value.length < 8) { status.textContent = 'Use at least 8 characters.'; return; }
-    if (a.value !== b.value) { status.textContent = 'The two passphrases differ.'; return; }
-    status.textContent = 'Encrypting the records…';
-    await DB.setLock(a.value);
-    flash = 'Passphrase set. The records are encrypted.';
-    route();
-  };
+  // Setting and changing are the same step: records are re-encrypted under the new key.
+  for (const [formId, done] of [['set-lock', 'Passphrase set. The records are encrypted.'], ['change-lock', 'Passphrase changed.']]) {
+    const form = document.getElementById(formId);
+    if (!form) continue;
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const { a, b } = e.target.elements;
+      if (a.value.length < 8) { status.textContent = 'Use at least 8 characters.'; return; }
+      if (a.value !== b.value) { status.textContent = 'The two passphrases differ.'; return; }
+      status.textContent = 'Encrypting the records…';
+      await DB.setLock(a.value);
+      flash = done;
+      route();
+    };
+  }
   const lockNow = document.getElementById('lock-now');
   if (lockNow) lockNow.onclick = () => { DB.forget(); route(); };
   const off = document.getElementById('unlock-off');

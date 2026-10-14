@@ -107,6 +107,7 @@ const URL = process.env.APP_URL || 'http://localhost:8765/';
   assert(await page.locator('#who-contact').isHidden());
   await page.fill('[name=spaceName]', 'Housing roundtable');
   await page.selectOption('[name=spaceKind]', 'roundtable');
+  await page.fill('[name=attendees]', 'Cllr Ruth Adeyemi\nAmina Okafor');
   await page.fill('[name=ideas]', 'Shared civic purpose');
   await page.fill('[name=response]', 'Two councillors picked it up.');
   await page.fill('[name=followUp]', 'none');
@@ -258,6 +259,18 @@ const URL = process.env.APP_URL || 'http://localhost:8765/';
   await go('#/ledger');
   assert.match(await page.locator('table').innerText(), /Our streets, our common ground[\s\S]*City Herald[\s\S]*written\tdue/);
 
+  // ---- Contacts ----
+  await go('#/contacts');
+  assert.match(await text(), /Cllr Ruth Adeyemi/, 'attendee became a contact');
+  await page.click('a:has-text("Amina Okafor")');
+  await page.waitForSelector('#cf');
+  assert.match(await text(), /Conversations in date order[\s\S]*at Housing roundtable/, 'spaces attended count as conversations');
+  assert.match(await text(), /Idea log[\s\S]*adopted[\s\S]*A city that belongs to all of us/);
+  assert.match(await text(), /Pieces as collaborator[\s\S]*Our streets/);
+  await page.selectOption('[name=strength]', 'developing');
+  await page.click('#cf button[type=submit]');
+  await page.waitForSelector('text=Contact saved.');
+
   // ---- Export ----
   await go('#/settings');
   for (const [x, re] of [
@@ -295,6 +308,21 @@ const URL = process.env.APP_URL || 'http://localhost:8765/';
   await page.waitForSelector('#unlock-off');
   await go('#/notes');
   assert.match(await text(), /Amina Okafor/);
+  await go('#/settings');
+  await page.fill('#change-lock [name=a]', 'battery staple');
+  await page.fill('#change-lock [name=b]', 'battery staple');
+  await page.click('#change-lock button');
+  await page.waitForSelector('text=Passphrase changed.');
+  await page.reload();
+  await page.waitForSelector('#unlock');
+  await page.fill('[name=pass]', 'correct horse');
+  await page.click('#unlock button');
+  await page.waitForSelector('text=does not open');
+  await page.fill('[name=pass]', 'battery staple');
+  await page.click('#unlock button');
+  await page.waitForSelector('#unlock-off');
+  await go('#/contact/' + await page.evaluate(async () => (await DB.all('contacts')).find((c) => c.name === 'Amina Okafor').id));
+  assert.match(await text(), /Conversations in date order/, 'records readable under the new passphrase');
   await go('#/settings');
   await page.click('#unlock-off');
   await page.waitForSelector('text=Passphrase removed.');

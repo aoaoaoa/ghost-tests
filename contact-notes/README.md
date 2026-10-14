@@ -12,7 +12,9 @@ Then open `http://localhost:8765` on the phone (same network, or served from the
 
 ## What it does
 
-**Contact notes** (phone). Four prompts: who or where, the idea tested, how they responded (with their exact words, optional), the follow-up agreed. Fields start empty. Drafts are kept as you type and show the time left in the 48-hour window. Saved notes are listed by week.
+**Contact notes** (phone). Four prompts: who or where, the idea tested, how they responded (with their exact words, optional), the follow-up agreed. Fields start empty. Drafts are kept as you type and show the time left in the 48-hour window. Saved notes are listed by week. A note about a space can name who you spoke with there.
+
+**Contacts.** Each contact has a page with every conversation (including spaces they attended), their idea log lines and any pieces they collaborated on, in date order.
 
 **Idea log.** Each idea named in a saved note waits as a line to log: how it landed (rejected, neutral, interested, adopted) and how they restated it. Each idea has a reading page with every response in date order, plus its marker phrasings, kind and status.
 
@@ -26,7 +28,7 @@ Then open `http://localhost:8765` on the phone (same network, or served from the
 
 ## Passphrase lock
 
-With a passphrase set, every record is encrypted on the device (AES-GCM, key derived with PBKDF2) and the app opens on a lock screen. A forgotten passphrase cannot be recovered, so take a backup first. Backups are not encrypted. The browser allows the lock only on https or localhost.
+With a passphrase set, every record is encrypted on the device (AES-GCM, key derived with PBKDF2) and the app opens on a lock screen. The passphrase can be changed or removed in Settings. A forgotten passphrase cannot be recovered, so take a backup first. Backups are not encrypted. The browser allows the lock only on https or localhost.
 
 ## Dictation
 
@@ -44,4 +46,4 @@ It walks every prototype, notes on a 390 px viewport and the rest at desktop wid
 
 ## Not yet
 
-Space attendee lists; changing the passphrase (remove and set again); sync between devices.
+Sync between devices: the brief leaves it for later, and the convenor's machine may be enough.
