@@ -45,7 +45,7 @@ async function synthesisList(msg) {
   main.innerHTML = `
     ${msg ? `<p class="status">${esc(msg)}</p>` : ''}
     <h2>Cycle syntheses</h2>
-    <p class="hint">One page at each reflection meeting, every ${SETTINGS.cycleMonths} months. Read by the National Assembly.</p>
+    <p class="hint">One page at each reflection meeting, every ${CYCLE_MONTHS} months. Read by the National Assembly.</p>
     <p class="actions"><a class="button primary" href="#/synthesis/new">Start the next synthesis</a></p>
     ${all.length ? `<ul class="notes">${all.map((s) => `<li><a href="#/synthesis/${s.id}">
       <strong>Cycle ${esc(s.cycle)}</strong>

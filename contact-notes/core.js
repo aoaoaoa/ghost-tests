@@ -27,7 +27,8 @@ function addMonths(dateStr, m) {
 
 // ---------- settings (stored unencrypted: no contact data here) ----------
 
-const SETTINGS = { author: '', cycleMonths: 4, hour: null, hours: [] };
+const CYCLE_MONTHS = 3; // decided by the office
+const SETTINGS = { author: '', hour: null, hours: [] };
 
 async function loadSettings() {
   for (const k of Object.keys(SETTINGS)) {
@@ -80,7 +81,7 @@ function reopenedLine(rec, previous) {
 // A record not reopened in two cycles is flagged for shortening or merging.
 function staleCutoff() {
   const d = new Date();
-  d.setMonth(d.getMonth() - 2 * SETTINGS.cycleMonths);
+  d.setMonth(d.getMonth() - 2 * CYCLE_MONTHS);
   return d.toISOString();
 }
 const isStale = (rec) => rec.savedAt && (rec.lastReopened || rec.savedAt) < staleCutoff();

@@ -22,7 +22,7 @@ Then open `http://localhost:8765` on the phone (same network, or served from the
 
 **Ledger and debriefs.** One row per piece or joint activity. Reviews fall due at 3, 6 and 12 months; each opens the piece with its ideas and marker phrasings and asks the response and uptake questions. Due reviews also show on the notes page. Debriefs record reactions, from whom, and whether the collaborator returns.
 
-**Throughout.** Every record needs a named reader and author before it saves, and carries a last-reopened date. Settings holds the cycle length (3 or 4 months), every export (Markdown and CSV), a full backup and restore, and the passphrase lock.
+**Throughout.** Every record needs a named reader and author before it saves, and carries a last-reopened date. Cycles are three months; a record not reopened in six is flagged. Settings holds every export (Markdown and CSV), a full backup and restore, and the passphrase lock.
 
 ## Passphrase lock
 

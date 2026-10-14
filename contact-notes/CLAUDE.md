@@ -64,11 +64,14 @@ Build in this order. Each is usable on its own.
 - Export everything to Markdown and CSV at any time. The records must outlive the app.
 - Mobile-first for prototype 1 only; the rest is desktop.
 
+## Decided
+
+- Cycle length: three months.
+- Debriefs: the officer writes them after a conversation with the collaborator.
+
 ## Open questions for the officers
 
-- Which cycle length: three months or four?
 - Does the Assembly want the synthesis as a page in the app or as an exported document?
-- Should collaborators (non-officers) be able to write debriefs themselves, or does the officer write them after a conversation?
 - What is the office's existing storage (Google Workspace, local files) so export formats match?
 
 ## Sources behind this brief

@@ -1,6 +1,6 @@
 'use strict';
 
-// Export, backup, passphrase lock, cycle length.
+// Export, backup, passphrase lock.
 
 const csvCell = (v) => {
   const s = Array.isArray(v) ? v.join('; ') : String(v ?? '');
@@ -67,10 +67,6 @@ VIEWS.settings = async (_id, _sub, msg) => {
       <label class="button">Restore from backup <input type="file" id="restore" accept="application/json,.json" hidden></label>
     </div>
 
-    <h2>Cycle length</h2>
-    <p class="hint">How often the office holds a reflection meeting. Records not reopened in two cycles are flagged at the meeting.</p>
-    <div class="choice">${[3, 4].map((m) => `<label><input type="radio" name="cycle" value="${m}" ${SETTINGS.cycleMonths === m ? 'checked' : ''}>${m} months</label>`).join('')}</div>
-
     <h2>Passphrase lock</h2>
     ${!DB.canLock() ? '<p>This browser only allows the lock on a secure address (https, or localhost on this device).</p>'
       : locked ? `<p>The records on this device are encrypted with your passphrase.</p>
@@ -129,11 +125,6 @@ VIEWS.settings = async (_id, _sub, msg) => {
     }
     e.target.value = '';
   };
-
-  main.querySelectorAll('[name=cycle]').forEach((r) => r.onchange = async () => {
-    await setSetting('cycleMonths', Number(r.value));
-    status.textContent = `Cycle length set to ${r.value} months.`;
-  });
 
   const setLock = document.getElementById('set-lock');
   if (setLock) setLock.onsubmit = async (e) => {
