@@ -12,7 +12,7 @@ palette = dict(blush=(245, 219, 226), pale=(251, 238, 241), peach=(246, 214, 198
 GROUND = [palette[k] for k in "blush pale peach cream lav sage lilac".split()]
 INK = [palette[k] for k in "olive chart dark deep coral salmon".split()]
 PATCH = dict(fill="dark deep olive coral", line="dark deep", rays="pale cream")   # grounds the star reads against
-REACH = dict(fill=(1.7, 2.4), line=(2.5, 2.9), rays=(2.6, 3.0))   # patch size in R; line and rays need the star covered
+REACH = dict(fill=(2.4, 2.8), line=(2.5, 2.9), rays=(2.6, 3.0))   # patch size in R; line and rays need the star covered
 star_modes = ["fill", "line", "rays"]
 
 
