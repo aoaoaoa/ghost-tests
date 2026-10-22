@@ -12,10 +12,10 @@ COLORS = 96
 
 def frames(theme, seed, mode, S=1080, N=N, upto=None):
     """RGB frames 0..upto-1 (default N) of one piece. The ground is composed once and reused."""
-    bg = theme.background(random.Random(seed), S)
     r = random.Random(seed + 99)
     cx, cy, R = theme.place_star(r, S)
     extras = dict(theme.star_colors(r), S=S)
+    bg = theme.background(random.Random(seed), S, (cx, cy, R, mode))
     out = []
     for f in range(N if upto is None else upto):
         im = bg.copy(); d = ImageDraw.Draw(im, "RGBA")

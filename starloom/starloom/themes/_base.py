@@ -12,7 +12,7 @@ class Theme(Protocol):
     palette: dict[str, RGB]         # named tokens only; no raw tuples elsewhere in the module
     star_modes: list[str]           # at least three; cycled across a batch
 
-    def background(self, r: random.Random, S: int) -> Image.Image: ...
+    def background(self, r: random.Random, S: int, star: tuple) -> Image.Image: ...   # star = (cx, cy, R, mode)
 
     def place_star(self, r: random.Random, S: int) -> tuple[float, float, float]: ...   # cx, cy, R
 

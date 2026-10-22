@@ -26,6 +26,14 @@ def torn_panels(d, r, S, grounds, inks, n=8, ink_odds=.25):
         torn(d, r, c, fill, S)
 
 
+def patch(d, r, cx, cy, R, fill, S, size=(1.7, 2.4)):
+    """A torn sheet under the star, smaller than its reach and off centre, so the points run over its edges."""
+    w, h, a = R * r.uniform(*size), R * r.uniform(size[0] - .2, size[1] - .2), r.uniform(-.35, .35)
+    ox, oy = R * r.choice([-1, 1]) * r.uniform(.2, .45), R * r.choice([-1, 1]) * r.uniform(.15, .4)
+    c = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]
+    torn(d, r, [(cx + ox + x * math.cos(a) - y * math.sin(a), cy + oy + x * math.sin(a) + y * math.cos(a)) for x, y in c], fill, S)
+
+
 def blade(d, x, y, L, w, ang, fill):
     """A curved leaf blade from (x, y), length L, belly w, pointing at ang."""
     pts = []
