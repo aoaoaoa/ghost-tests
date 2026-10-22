@@ -1,7 +1,7 @@
 """Theme registry: name -> module."""
 import importlib
 
-NAMES = []
+NAMES = ["garden_blush"]
 
 THEMES = {n: importlib.import_module(f"{__name__}.{n}") for n in NAMES}
 
