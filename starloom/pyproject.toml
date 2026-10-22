@@ -1,0 +1,19 @@
+[project]
+name = "starloom"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["Pillow==12.3.0"]
+
+[project.optional-dependencies]
+mp4 = ["imageio-ffmpeg"]
+test = ["pytest"]
+
+[project.scripts]
+starloom = "starloom.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["starloom*"]
